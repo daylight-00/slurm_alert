@@ -34,7 +34,7 @@ A system for receiving real-time Slack notifications when your Slurm jobs start 
 sudo cp .slurmrc /apps/.slurmrc
 
 # Configure the Bot Token
-sudo nano /apps/.slurmrc
+sudo vi /apps/.slurmrc
 # Replace BOT_USER_TOKEN with your actual token
 ```
 
@@ -45,8 +45,9 @@ sudo nano /apps/.slurmrc
 cp .slurmrc ~/.slurmrc
 
 # Configure the token
-nano ~/.slurmrc
+vi ~/.slurmrc
 # Replace BOT_USER_TOKEN with your actual token
+# Optionally, you can hardcode your `Channel ID` in the script for convenience
 ```
 
 ## Usage
