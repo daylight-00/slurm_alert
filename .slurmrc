@@ -1,0 +1,89 @@
+#!/bin/bash
+# Slurm Alert - Slack notification functions for Slurm jobs
+# Author: hwjang00@snu.ac.kr
+# Date: 2025-07-01
+
+# ========================================
+# Configuration
+# ========================================
+# Set your Bot User OAuth Token here (format: xoxb-...)
+BOT_USER_TOKEN="YOUR_BOT_TOKEN_HERE"
+
+# ========================================
+# Core Functions
+# ========================================
+
+slack_alert() {
+    local MESSAGE="${1:-$MESSAGE}"
+    local BOT_CHANNEL_ID="${2}"
+    local BOT_USER_TOKEN="${3:-$BOT_USER_TOKEN}"
+    
+    curl -s -X POST -H "Authorization: Bearer $BOT_USER_TOKEN" \
+        -H 'Content-type: application/json; charset=utf-8' \
+        --data "{\"channel\":\"$BOT_CHANNEL_ID\", \"text\":\"$MESSAGE\"}" \
+        https://slack.com/api/chat.postMessage > /dev/null 2>&1
+}
+
+slurm_start() {
+    echo $(date)
+    local MESSAGE="[Job $SLURM_JOB_ID] Started on $(hostname)"
+    
+    echo "[INFO] Job Information"
+    echo "============================================="
+    echo "[INFO] Job Name       : $SLURM_JOB_NAME"
+    echo "[INFO] Job ID         : $SLURM_JOB_ID"
+    echo "[INFO] Submit Dir     : $SLURM_SUBMIT_DIR"
+    echo "[INFO] Partition      : $SLURM_JOB_PARTITION"
+    echo "[INFO] Node List      : $SLURM_JOB_NODELIST"
+    echo "[INFO] Nodes          : $SLURM_JOB_NUM_NODES"
+    echo "[INFO] CPUs per Task  : $SLURM_CPUS_PER_TASK"
+    echo "[INFO] Memory (MB)    : $SLURM_MEM_PER_NODE"
+    echo "[INFO] User           : $SLURM_JOB_USER"
+    echo "[INFO] Work Dir       : $SLURM_SUBMIT_DIR"
+    echo "[INFO] Tasks per Node : $SLURM_TASKS_PER_NODE"
+    echo "[INFO] Dependency     : $SLURM_JOB_DEPENDENCY"
+    echo "[INFO] Allocated GPUs : $SLURM_JOB_GPUS"
+    echo "---------------------------------------------"
+    echo "[INFO] Job allocated on node(s): $SLURM_NODELIST"
+    echo "[INFO] Job running on: $(hostname)"
+    echo "============================================="
+    echo
+    
+    start_time=$(date +%s)
+    
+    local BOT_CHANNEL_ID="${1}"
+    if [ -z "$BOT_CHANNEL_ID" ]; then
+        echo '[Warning] Channel ID of Slurm chatbot is required for slack alert.'
+        echo '          Usage: slurm_start "YOUR_CHANNEL_ID"'
+        return 1
+    fi
+    
+    local SEND_ALERT="${2:-alert}"
+    if [ "$SEND_ALERT" == "alert" ]; then
+        slack_alert "$MESSAGE" "$BOT_CHANNEL_ID"
+    fi
+}
+
+slurm_end() {
+    local end_time=$(date +%s)
+    local duration=$(($end_time-$start_time))
+    
+    echo
+    echo "============================================="
+    echo $(date)
+    echo "[INFO] Job finished in $duration seconds"
+    
+    local MESSAGE="[Job $SLURM_JOB_ID] Finished in $duration seconds"
+    
+    local BOT_CHANNEL_ID="${1}"
+    if [ -z "$BOT_CHANNEL_ID" ]; then
+        echo '[Warning] Channel ID of Slurm chatbot is required for slack alert.'
+        echo '          Usage: slurm_end "YOUR_CHANNEL_ID"'
+        return 1
+    fi
+    
+    local SEND_ALERT="${2:-alert}"
+    if [ "$SEND_ALERT" == "alert" ]; then
+        slack_alert "$MESSAGE" "$BOT_CHANNEL_ID"
+    fi
+}
